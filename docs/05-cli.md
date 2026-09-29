@@ -34,6 +34,24 @@ schedule:work
 каждую минуту. Процесс работает в foreground и корректно подходит для Docker
 service. После изменения schedule-файлов long-running process нужно перезапустить.
 
+Без `--timezone` время тика берётся в часовом поясе приложения (`date.timezone`), как и в `schedule:run`;
+`dailyAt()` без `timezone()` срабатывает по этому поясу.
+
+Задачи выполняются в одном долгоживущем процессе, поэтому после каждого тика нужно сбрасывать состояние
+(identity map ORM, кеши, контекст тенанта). `ScheduleWorker` принимает хук `resetState` и вызывает его после
+каждого тика; ошибка сброса выводится и не останавливает worker:
+
+```php
+use PhpSoftBox\Container\Reset\ServicesResetter;
+use PhpSoftBox\Scheduler\Cli\ScheduleWorker;
+
+$worker = new ScheduleWorker(
+    scheduler: $scheduler,
+    loader: $loader,
+    resetState: static fn () => $container->get(ServicesResetter::class)->reset(),
+);
+```
+
 Исключение отдельной задачи выводится как ошибка, но не останавливает выполнение
 остальных due-задач. `schedule:run` завершится с ненулевым кодом, если хотя бы одна
 задача упала. Worker продолжит следующие циклы; его логи должны собираться системой

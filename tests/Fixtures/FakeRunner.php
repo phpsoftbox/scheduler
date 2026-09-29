@@ -41,4 +41,9 @@ final class FakeRunner implements RunnerInterface
     {
         return $this->io;
     }
+
+    public function environment(): string
+    {
+        return 'test';
+    }
 }

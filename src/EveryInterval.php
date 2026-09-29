@@ -16,7 +16,7 @@ final class EveryInterval
     ) {
     }
 
-    public function minutes(): ScheduledTask
+    public function minutes(): ScheduledTask|ScheduledGroup
     {
         if ($this->interval < 1) {
             throw new InvalidArgumentException('Interval must be >= 1.');
@@ -25,7 +25,7 @@ final class EveryInterval
         return $this->task->cronExpression(sprintf('*/%d * * * *', $this->interval));
     }
 
-    public function hours(?int $minutes = null): ScheduledTask
+    public function hours(?int $minutes = null): ScheduledTask|ScheduledGroup
     {
         if ($this->interval < 1) {
             throw new InvalidArgumentException('Interval must be >= 1.');
