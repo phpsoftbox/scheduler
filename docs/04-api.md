@@ -42,7 +42,8 @@
 
 - `add(callable|string $handler, ?string $name = null): self`
 - `runTask(callable|string $handler, ?string $name = null): self`
-- `cronExpression(...)`, `dailyAt(...)`, `weeklyOn(...)`, `timezone(...)` и т.д.
+- `cronExpression(...)`, `every(...)->minutes()`/`hours()`, `dailyAt(...)`, `weeklyOn(...)`, `timezone(...)` и т.д.;
+  `every()` возвращает ту же группу
 - `onQueue(?string $queueName = null)` — поставить в очередь всю группу
 
 Пример:
