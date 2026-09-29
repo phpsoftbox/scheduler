@@ -35,7 +35,10 @@
         }
     },
     "suggest": {
-        "ext-redis": "Required by RedisScheduleLockStore for atomic distributed scheduler locks"
+        "ext-pcntl": "Lets schedule:work stop gracefully on SIGTERM/SIGINT after the current tick.",
+        "ext-redis": "Required by RedisScheduleLockStore for atomic distributed scheduler locks",
+        "phpsoftbox/cli-app": "Required for schedule:run and schedule:work commands.",
+        "phpsoftbox/queue": "Required for onQueue() tasks and SchedulerQueueJobHandler."
     },
     "extra": {
         "psb": {
