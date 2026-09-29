@@ -12,8 +12,10 @@ use PhpSoftBox\Scheduler\ScheduleLoader;
 use PhpSoftBox\Scheduler\ScheduleOutcome;
 use PhpSoftBox\Scheduler\Scheduler;
 use Psr\Clock\ClockInterface;
+use Throwable;
 
 use function constant;
+use function date_default_timezone_get;
 use function defined;
 use function function_exists;
 use function max;
@@ -38,6 +40,13 @@ final class ScheduleWorker
         ?callable $timeProvider = null,
         ?callable $sleeper = null,
         private readonly ?ClockInterface $clock = null,
+        /**
+         * Сброс состояния после каждого тика (например, `ServicesResetter::reset()` из phpsoftbox/container):
+         * задачи следующего тика не должны видеть кеши, identity map и контекст предыдущих.
+         *
+         * @var null|Closure():void
+         */
+        private readonly ?Closure $resetState = null,
     ) {
         $this->timeProvider = $timeProvider !== null
             ? Closure::fromCallable($timeProvider)
@@ -89,6 +98,8 @@ final class ScheduleWorker
                 '[' . $time->format('Y-m-d H:i:s T') . '] Выполнено задач: ' . $executed,
             );
 
+            $this->resetState($runner);
+
             if ($maxRuns > 0 && $runs >= $maxRuns) {
                 break;
             }
@@ -99,9 +110,30 @@ final class ScheduleWorker
         return $runs;
     }
 
+    /**
+     * Ошибка сброса не останавливает worker: она выводится, следующий тик выполняется.
+     */
+    private function resetState(RunnerInterface $runner): void
+    {
+        if ($this->resetState === null) {
+            return;
+        }
+
+        try {
+            ($this->resetState)();
+        } catch (Throwable $exception) {
+            $runner->io()->writeln('Ошибка сброса состояния: ' . $exception->getMessage(), 'error');
+        }
+    }
+
+    /**
+     * Без явного часового пояса время берётся в поясе приложения (`date.timezone`), как в `schedule:run`:
+     * `DateTimeImmutable('@…')` всегда в UTC, и `dailyAt()` без `timezone()` сработал бы со сдвигом.
+     */
     private function currentTime(?DateTimeZone $timezone): DateTimeImmutable
     {
-        $time = $this->clock?->now() ?? new DateTimeImmutable('@' . ($this->timeProvider)());
+        $time = $this->clock?->now() ?? new DateTimeImmutable('@' . ($this->timeProvider)())
+            ->setTimezone(new DateTimeZone(date_default_timezone_get()));
 
         return $timezone !== null ? $time->setTimezone($timezone) : $time;
     }
